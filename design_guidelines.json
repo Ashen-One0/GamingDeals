@@ -1,0 +1,115 @@
+{
+  "theme_and_archetype": {
+    "theme": "hybrid_fullstack",
+    "mode": "Both Light and Dark",
+    "archetype": "Archetype 2: The Performance Pro (Tactical Gaming Variant)",
+    "description": "A high-energy, command-center feel focusing on clear deal hierarchies. Avoids generic tech-purple. Uses deep obsidian (dark) or crisp off-white (light) with high-contrast Acid Green / Crimson accents to highlight savings.",
+    "emotion": "Excitement, precision, tactical advantage."
+  },
+  "typography": {
+    "heading_font": "Unbounded",
+    "body_font": "Outfit",
+    "fallback_fonts": "sans-serif",
+    "rules": {
+      "headings": "Tight tracking (tracking-tight), never use Inter for headings. Use uppercase + wide spacing for labels/overline.",
+      "body": "Clean geometric sans with readable line-height.",
+      "rtl_support": "Ensure fonts support Arabic characters properly (e.g., Cairo or Noto Sans Arabic as fallback for Arabic locale)."
+    }
+  },
+  "colors": {
+    "light": {
+      "background": "#FAFAFA",
+      "surface": "#FFFFFF",
+      "border": "#E4E4E7",
+      "text_primary": "#09090B",
+      "text_secondary": "#52525B",
+      "accent_primary": "#D4FF00",
+      "accent_secondary": "#FF2A4D",
+      "success": "#16A34A",
+      "savings_badge": "#D4FF00"
+    },
+    "dark": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "border": "#27272A",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A1A1AA",
+      "accent_primary": "#D4FF00",
+      "accent_secondary": "#FF2A4D",
+      "success": "#22C55E",
+      "savings_badge": "#D4FF00"
+    }
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "Use generous spacing. Tailwind p-6, p-8, p-12. Avoid cramped deal cards.",
+    "hero_section": "Mode A: Tetris Grid. Asymmetrical layout for featured/trending deals.",
+    "deals_grid": "Mode B: Control Room Grid. grid-cols-1 md:grid-cols-2 lg:grid-cols-4. gap-6.",
+    "rtl_guidelines": "CRITICAL: Use Tailwind logical properties (e.g., `ps-4` instead of `pl-4`, `ms-2` instead of `ml-2`, `start-0` instead of `left-0`). This ensures layout flips automatically for Arabic LTR/RTL support."
+  },
+  "components": {
+    "deal_card": {
+      "structure": "Flat background, 1px subtle border. No heavy shadows in dark mode.",
+      "hierarchy": "1. Game Cover (max-h-48 object-cover). 2. Title. 3. Price Block (Old price strikethrough -> New price -> % off Badge). 4. Platform Icons.",
+      "hover_state": "Slight lift (-translate-y-1), border color brightens to accent_secondary."
+    },
+    "buttons": {
+      "primary": "Solid high-contrast color. In dark mode: bg-[#D4FF00] text-black hover:bg-[#bce600]. In light mode: bg-black text-[#D4FF00].",
+      "secondary": "Outline with 1px border. Glassmorphism hover."
+    },
+    "badges": {
+      "discount": "Sharp edges (rounded-none or max rounded-sm). bg-[#D4FF00] text-black font-black for max visibility."
+    },
+    "header": {
+      "style": "Crystal Glassmorphism: backdrop-blur-xl with 1px bottom border. Must support Theme Toggle and Language Switcher."
+    }
+  },
+  "icons_and_assets": {
+    "library": "lucide-react for UI icons. react-icons (FaSteam, FaXbox, FaPlaystation, SiEpicgames) for platform logos.",
+    "installation": "yarn add react-icons lucide-react"
+  },
+  "testing_attributes": {
+    "rule": "All interactive and key informational elements MUST include a data-testid attribute.",
+    "examples": ["data-testid='deal-card'", "data-testid='wishlist-btn'", "data-testid='language-switcher'"]
+  },
+  "media_urls": {
+    "hero_backgrounds": [
+      {
+        "url": "https://static.prod-images.emergentagent.com/jobs/c7a6041c-9e5b-4ff2-9f5d-cc32102acd27/images/fbb6e2e675c7605a65c93bd3a7ea8002623ea662f6d40670a3697a19a10ec023.png",
+        "description": "Abstract dark tactical tech background for dark mode hero",
+        "category": "hero_dark"
+      },
+      {
+        "url": "https://static.prod-images.emergentagent.com/jobs/c7a6041c-9e5b-4ff2-9f5d-cc32102acd27/images/b0d61557d4023c27da5cef7584020ab9ae877eb05d4e02a7c67f69e69a78f62c.png",
+        "description": "Abstract white high-contrast background for light mode hero",
+        "category": "hero_light"
+      }
+    ],
+    "game_covers_placeholders": [
+      {
+        "url": "https://images.unsplash.com/photo-1702126952856-f366d8cb5462?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxhY3Rpb24lMjB2aWRlbyUyMGdhbWUlMjBjaW5lbWF0aWN8ZW58MHx8fHwxNzc5MjkyMzAzfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Action game cinematic",
+        "category": "game_cover"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1763198216883-7473e2c7eabb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxlcGljJTIwZmFudGFzeSUyMGdhbWluZyUyMGxhbmRzY2FwZXxlbnwwfHx8fDE3NzkyOTIzMDN8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Fantasy game landscape",
+        "category": "game_cover"
+      },
+      {
+        "url": "https://images.pexels.com/photos/7047538/pexels-photo-7047538.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Controller in hand action game",
+        "category": "game_cover"
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Use Tailwind layout logical properties (`start`, `end`, `ps`, `pe`, `ms`, `me`) globally to support standard LTR to RTL automatic flipping for Arabic.",
+    "Ensure 1px borders are present on deal cards to maintain the 'Performance Pro' technical structure.",
+    "For the language switcher, implement Arabic (ar) applying `dir='rtl'` on the html tag.",
+    "Do NOT use typical generic violet/purple gaming colors; strictly adhere to the tactical Obsidian/Off-white base with Acid Green/Electric Crimson accents.",
+    "Ensure strict APCA accessible contrast on all buttons and overlays.",
+    "Create the app using Javascript (.js/.jsx) files. DO NOT output .tsx files.",
+    "Integrate Shadcn primitives (customized to remove generic Vercel look).",
+    "Add 'data-testid' to all buttons, links, form inputs, and key UI cards."
+  ]
+}
