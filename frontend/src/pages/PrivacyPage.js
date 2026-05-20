@@ -57,7 +57,7 @@ const PrivacyPage = () => {
         ["7. Children",
          <p>GameDeals is not directed at children under 13. We do not knowingly collect their data.</p>],
         ["8. Contact",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:privacy@gamedeals.app">privacy@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
     ar: {
@@ -102,7 +102,7 @@ const PrivacyPage = () => {
         ["7. الأطفال",
          <p>GameDeals غير موجّه للأطفال دون سن 13 ولا نجمع بياناتهم بشكل متعمّد.</p>],
         ["8. التواصل",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:privacy@gamedeals.app">privacy@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
     es: {
@@ -129,7 +129,7 @@ const PrivacyPage = () => {
         ["7. Niños",
          <p>No dirigido a menores de 13 años.</p>],
         ["8. Contacto",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:privacy@gamedeals.app">privacy@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
   };

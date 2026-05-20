@@ -41,7 +41,7 @@ const TermsPage = () => {
         ["8. Changes",
          <p>We may update these terms; significant changes will be notified by email or in-app banner.</p>],
         ["9. Contact",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:hello@gamedeals.app">hello@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
     ar: {
@@ -70,7 +70,7 @@ const TermsPage = () => {
         ["8. التغييرات",
          <p>قد نحدّث هذه الشروط — التغييرات الجوهرية يتم إعلامك بها عبر البريد أو إشعار داخل التطبيق.</p>],
         ["9. التواصل",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:hello@gamedeals.app">hello@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
     es: {
@@ -99,7 +99,7 @@ const TermsPage = () => {
         ["8. Cambios",
          <p>Podemos actualizar estos términos — cambios importantes se notificarán.</p>],
         ["9. Contacto",
-         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:hello@gamedeals.app">hello@gamedeals.app</a></p>],
+         <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
   };

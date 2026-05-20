@@ -42,7 +42,7 @@ const Footer = () => {
         <div>
           <h4 className="text-xs uppercase tracking-widest font-black mb-3">Contact</h4>
           <p className="text-sm text-zinc-600 dark:text-zinc-300 flex items-center gap-2">
-            <Mail className="w-4 h-4"/> hello@gamedeals.app
+            <Mail className="w-4 h-4"/> Gamingdeals01@gmail.com
           </p>
           <p className="text-xs text-zinc-500 mt-4 flex items-center gap-1">
             Built with <Heart className="w-3 h-3 text-[#FF2A4D] fill-current"/> for gamers
