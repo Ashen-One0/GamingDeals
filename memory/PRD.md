@@ -4,35 +4,40 @@
 اعمل تطبيق لعرض التخفيضات علي الالعاب من كل المنصات
 
 ## User Choices
-- Data source: CheapShark (Steam, Epic, GOG, plus 30+ digital stores)
-- Platforms: All (Steam, Epic, GOG, PlayStation, Xbox referenced visually)
-- Features: Wishlist, price drop alerts, advanced search & filter
-- Auth: Simple email/password (JWT) + Emergent-managed Google OAuth
-- Languages: Arabic (RTL), English, Spanish
-- Themes: Light + Dark (both)
+- Data: CheapShark (Steam, Epic, GOG, +30 stores)
+- Platforms: All
+- Features: Wishlist, price alerts, advanced filter, **ads + Pro subscription**, **affiliate tracking**
+- Auth: JWT + Emergent Google OAuth
+- Languages: AR / EN / ES (RTL for AR)
+- Themes: Light + Dark
 
 ## Architecture
-- Backend: FastAPI + Motor + MongoDB. Proxies CheapShark with required `User-Agent` header.
-- Frontend: React 19 + Tailwind + shadcn/ui + react-i18next + axios + sonner.
-- Auth: dual mode (JWT via Authorization header, or session_token cookie from Emergent OAuth).
-- Design: Tactical Gaming (Obsidian + Acid Green #D4FF00 + Crimson #FF2A4D), Unbounded/Outfit fonts, Cairo for Arabic.
+- Backend: FastAPI + Motor + MongoDB + Stripe (emergentintegrations)
+- Frontend: React 19 + Tailwind + shadcn/ui + react-i18next + axios + sonner
+- Payments: Stripe Checkout (monthly $4.99 / yearly $39.99) via `STRIPE_API_KEY=sk_test_emergent`
+- MongoDB collections: users, user_sessions, wishlist, alerts, payment_transactions
 
-## Implemented (2026-02-20)
-- Backend endpoints: `/api/auth/{register,login,me,logout,session-process}`, `/api/deals`, `/api/stores`, `/api/games/{id}`, `/api/wishlist`, `/api/alerts`
-- Frontend pages: Home (hero + Hot Deals + Trending), Deals (filterable grid), Login (JWT + Google), Wishlist (protected), Alerts (protected), AuthCallback
-- Multilingual support with RTL for Arabic
-- Light/Dark theme with localStorage persistence
-- 100% backend test pass; frontend e2e verified
+## Implemented Timeline
+**2026-02-20 (MVP)** — Auth, deals proxy, wishlist, alerts, i18n, themes
+**2026-02-20 (+ads)** — 5 ad slots, AdSense-ready loader, AdsSetup guide
+**2026-02-20 (+pro+affiliate)** — Stripe checkout, Pro page, hidden ads for Pro users, affiliate tracking helper
 
-## Tech Notes
-- CheapShark requires descriptive User-Agent (handled by `CHEAPSHARK_HEADERS`)
-- Auth cookie: httpOnly, secure, samesite=none (preview is HTTPS)
-- All MongoDB queries exclude `_id`
+## Endpoints
+Auth: `/api/auth/{register,login,me,logout,session-process}`
+Deals: `/api/deals`, `/api/stores`, `/api/games/{id}`
+Wishlist: `/api/wishlist` (CRUD)
+Alerts: `/api/alerts` (CRUD)
+Pro: `/api/pro/{packages,checkout,status/{sid}}`, `/api/webhook/stripe`
+Affiliate: `/api/affiliate/config`
 
-## Backlog (P1/P2)
+## Tests
+- Backend pytest: 28/29 (97%) — `tests/test_game_deals.py` + `tests/test_pro_affiliate.py`
+- Frontend: e2e via testing agent for filters, theme, lang, login, wishlist, alerts, Pro page
+
+## Backlog
 - Game detail page with price history chart
-- Email notifications when alerts trigger (cron + SMTP)
-- Social sharing buttons
-- More refined PlayStation/Xbox coverage (CheapShark is mostly PC stores)
-- Mobile bottom navigation
-- Saved searches / followed publishers
+- Email/Telegram notifications when alerts trigger
+- DekuDeals integration for PS/Xbox
+- Pro-only features (CSV export, bulk wishlist import)
+- Stripe Billing Portal for subscription management
+- Apply real affiliate IDs once partner accounts approved

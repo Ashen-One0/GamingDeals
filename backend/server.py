@@ -39,6 +39,9 @@ STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
 CHEAPSHARK_BASE = "https://www.cheapshark.com/api/1.0"
 CHEAPSHARK_HEADERS = {"User-Agent": "GameDealsApp/1.0 (contact@gamedeals.app)"}
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
@@ -511,7 +514,18 @@ async def get_pro_status(session_id: str, request: Request):
     host_url = str(request.base_url).rstrip("/")
     webhook_url = f"{host_url}/api/webhook/stripe"
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    checkout_status = await stripe_checkout.get_checkout_status(session_id)
+    try:
+        checkout_status = await stripe_checkout.get_checkout_status(session_id)
+    except Exception as e:
+        # Graceful fallback: SDK can raise validation errors for pending sessions
+        # (Stripe metadata typed as StripeObject vs strict Dict). Return cached state.
+        logger.warning("stripe get_checkout_status error: %s (falling back to DB)", e)
+        return {
+            "status": txn.get("status", "open"),
+            "payment_status": txn.get("payment_status", "unpaid"),
+            "amount_total": int(txn.get("amount", 0) * 100),
+            "currency": txn.get("currency", "usd"),
+        }
 
     # Update transaction
     new_status = checkout_status.status
@@ -634,9 +648,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 
 @app.on_event("shutdown")

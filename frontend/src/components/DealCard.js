@@ -33,6 +33,7 @@ const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
   const salePrice = parseFloat(deal.salePrice || 0);
   const normalPrice = parseFloat(deal.normalPrice || 0);
   const storeInfo = STORE_MAP[deal.storeID] || { name: `Store ${deal.storeID}`, abbr: "STR" };
+  const buyUrl = dealUrl(deal);
 
   return (
     <div
