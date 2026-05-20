@@ -37,7 +37,7 @@ const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
 
   return (
     <div
-      data-testid="deal-card"
+      data-testid={`deal-card-${deal.dealID}`}
       className="group relative bg-white dark:bg-[#18181B] border border-zinc-200 dark:border-[#27272A] flex flex-col overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-[#FF2A4D] dark:hover:border-[#FF2A4D]"
     >
       {savings > 0 && (
@@ -93,7 +93,7 @@ const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
             {t("deal.view")} <ExternalLink className="w-3 h-3" />
           </a>
           <button
-            data-testid="wishlist-btn"
+            data-testid={`wishlist-btn-${deal.gameID}`}
             onClick={() => onToggleWishlist?.(deal)}
             className={`p-2 border transition ${
               inWishlist
@@ -105,7 +105,7 @@ const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
             <Heart className={`w-4 h-4 ${inWishlist ? "fill-current" : ""}`} />
           </button>
           <button
-            data-testid="alert-btn"
+            data-testid={`alert-btn-${deal.gameID}`}
             onClick={() => onSetAlert?.(deal)}
             className="p-2 border border-zinc-300 dark:border-[#27272A] text-zinc-600 dark:text-zinc-300 hover:border-[#D4FF00] hover:text-[#D4FF00] transition"
             aria-label={t("deal.set_alert")}

@@ -25,22 +25,23 @@ const DealsPage = () => {
   const [wishlistIds, setWishlistIds] = useState(new Set());
   const [alertGame, setAlertGame] = useState(null);
 
-  const load = useCallback(async (p = 0) => {
+  const load = useCallback(async (p = 0, overrideFilters = null) => {
+    const f = overrideFilters || filters;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       params.set("pageSize", "24");
       params.set("pageNumber", String(p));
-      params.set("sortBy", filters.sortBy);
-      params.set("desc", filters.sortBy === "Savings" ? "1" : "0");
-      params.set("upperPrice", String(filters.upperPrice));
-      if (filters.storeID && filters.storeID !== "all") params.set("storeID", filters.storeID);
-      if (filters.title) params.set("title", filters.title);
-      if (filters.metacritic) params.set("metacritic", filters.metacritic);
+      params.set("sortBy", f.sortBy);
+      params.set("desc", f.sortBy === "Savings" ? "1" : "0");
+      params.set("upperPrice", String(f.upperPrice));
+      if (f.storeID && f.storeID !== "all") params.set("storeID", f.storeID);
+      if (f.title) params.set("title", f.title);
+      if (f.metacritic) params.set("metacritic", f.metacritic);
       const r = await axios.get(`${API}/deals?${params.toString()}`);
       let data = r.data || [];
-      if (filters.minDiscount > 0) {
-        data = data.filter(d => parseFloat(d.savings || 0) >= filters.minDiscount);
+      if (f.minDiscount > 0) {
+        data = data.filter(d => parseFloat(d.savings || 0) >= f.minDiscount);
       }
       setDeals(data);
     } catch {
@@ -89,8 +90,10 @@ const DealsPage = () => {
             setFilters={setFilters}
             onApply={() => load(0)}
             onReset={() => {
-              setFilters({ title: "", storeID: "all", upperPrice: 50, minDiscount: 0, metacritic: "", sortBy: "Deal Rating" });
-              setTimeout(() => load(0), 0);
+              const defaults = { title: "", storeID: "all", upperPrice: 50, minDiscount: 0, metacritic: "", sortBy: "Deal Rating" };
+              setFilters(defaults);
+              setPage(0);
+              load(0, defaults);
             }}
           />
         </div>
