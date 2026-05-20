@@ -8,6 +8,7 @@ import "./i18n";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 import HomePage from "./pages/HomePage";
 import DealsPage from "./pages/DealsPage";
 import LoginPage from "./pages/LoginPage";
@@ -32,6 +33,7 @@ const AppRouter = () => {
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/dashboard" element={<HomePage />} />
       </Routes>
+      <Footer />
     </>
   );
 };

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { ArrowRight, Flame, Tag, ShieldCheck } from "lucide-react";
 import DealCard from "../components/DealCard";
+import AdSlot from "../components/AdSlot";
 import { Button } from "../components/ui/button";
 import { API, useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
@@ -143,9 +144,19 @@ const HomePage = () => {
       <Section title={t("hot_deals")} loading={loading} deals={savings} wishlistIds={wishlistIds}
         onToggleWishlist={toggleWishlist} onSetAlert={openAlert} />
 
+      {/* MID-PAGE AD */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AdSlot size="leaderboard" testId="home-mid-ad" />
+      </div>
+
       {/* TRENDING */}
       <Section title={t("trending")} loading={loading} deals={trending} wishlistIds={wishlistIds}
         onToggleWishlist={toggleWishlist} onSetAlert={openAlert} />
+
+      {/* BOTTOM BANNER AD */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <AdSlot size="banner" testId="home-bottom-ad" />
+      </div>
 
       {alertGame && (
         <AlertDialog

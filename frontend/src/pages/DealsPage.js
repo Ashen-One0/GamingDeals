@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTranslation } from "react-i18next";
 import DealCard from "../components/DealCard";
 import FilterPanel from "../components/FilterPanel";
+import AdSlot from "../components/AdSlot";
 import { API, useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import AlertDialog from "../components/AlertDialog";
@@ -96,6 +97,10 @@ const DealsPage = () => {
               load(0, defaults);
             }}
           />
+          {/* SIDEBAR AD below filters */}
+          <div className="mt-5 hidden lg:block">
+            <AdSlot size="rectangle" testId="deals-sidebar-ad" />
+          </div>
         </div>
         <div className="lg:col-span-9">
           <div className="flex items-end justify-between mb-5">
@@ -112,14 +117,20 @@ const DealsPage = () => {
               No deals found
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {deals.map(d => (
-                <DealCard key={d.dealID} deal={d}
-                  inWishlist={wishlistIds.has(d.gameID)}
-                  onToggleWishlist={toggleWishlist}
-                  onSetAlert={openAlert} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {deals.map(d => (
+                  <DealCard key={d.dealID} deal={d}
+                    inWishlist={wishlistIds.has(d.gameID)}
+                    onToggleWishlist={toggleWishlist}
+                    onSetAlert={openAlert} />
+                ))}
+              </div>
+              {/* In-grid horizontal ad */}
+              <div className="mt-8">
+                <AdSlot size="leaderboard" testId="deals-inline-ad" />
+              </div>
+            </>
           )}
 
           <div className="flex justify-center gap-3 mt-10">
