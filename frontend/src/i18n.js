@@ -5,7 +5,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 const resources = {
   en: {
     translation: {
-      app_name: "GameDeals",
+      app_name: "GamingDeals",
       tagline: "Track the hottest deals across every platform.",
       nav: {
         home: "Home",
@@ -92,7 +92,7 @@ const resources = {
   },
   ar: {
     translation: {
-      app_name: "صفقات الألعاب",
+      app_name: "GamingDeals",
       tagline: "تتبّع أقوى التخفيضات على كل المنصات.",
       nav: {
         home: "الرئيسية",
@@ -179,7 +179,7 @@ const resources = {
   },
   es: {
     translation: {
-      app_name: "GameDeals",
+      app_name: "GamingDeals",
       tagline: "Sigue las mejores ofertas en todas las plataformas.",
       nav: {
         home: "Inicio",

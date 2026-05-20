@@ -44,7 +44,7 @@ const LoginPage = () => {
           </span>
           <div>
             <h1 className="font-heading text-2xl font-black tracking-tight">{mode === "login" ? t("auth.sign_in") : t("auth.sign_up")}</h1>
-            <p className="text-xs uppercase tracking-widest text-zinc-500">GameDeals</p>
+            <p className="text-xs uppercase tracking-widest text-zinc-500">GamingDeals</p>
           </div>
         </div>
 

@@ -17,7 +17,7 @@ const PrivacyPage = () => {
   const content = {
     en: {
       title: "Privacy Policy",
-      intro: `GameDeals respects your privacy. This document explains what we collect, why, and your choices.`,
+      intro: `GamingDeals respects your privacy. This document explains what we collect, why, and your choices.`,
       sections: [
         ["1. Information We Collect",
          <>
@@ -45,7 +45,7 @@ const PrivacyPage = () => {
            <p>You can refuse non-essential cookies via the banner shown on your first visit.</p>
          </>],
         ["4. Affiliate Disclosure",
-         <p>Some links on GameDeals are affiliate links. When you buy a game through a "View Deal" button, the store (e.g. Humble, Fanatical, Green Man Gaming) may pay us a small commission at no extra cost to you. This does not influence which deals we show — the data comes directly from CheapShark's public API.</p>],
+         <p>Some links on GamingDeals are affiliate links. When you buy a game through a "View Deal" button, the store (e.g. Humble, Fanatical, Green Man Gaming) may pay us a small commission at no extra cost to you. This does not influence which deals we show — the data comes directly from CheapShark's public API.</p>],
         ["5. Third-Party Services",
          <ul className="list-disc ps-5 space-y-1">
            <li><a className="text-[#D4FF00] underline" href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer">Stripe</a> — payment processing.</li>
@@ -55,7 +55,7 @@ const PrivacyPage = () => {
         ["6. Your Rights",
          <p>You can request a copy of your data, correct it, or delete your account at any time by emailing us. Deleting your account removes your wishlist, alerts, and subscription record. Anonymized analytics may be retained.</p>],
         ["7. Children",
-         <p>GameDeals is not directed at children under 13. We do not knowingly collect their data.</p>],
+         <p>GamingDeals is not directed at children under 13. We do not knowingly collect their data.</p>],
         ["8. Contact",
          <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
@@ -90,7 +90,7 @@ const PrivacyPage = () => {
            <p>يمكنك رفض الكوكيز غير الأساسية عبر شريط الموافقة الذي يظهر في أول زيارة.</p>
          </>],
         ["4. الإفصاح عن العمولات (Affiliate)",
-         <p>بعض الروابط على GameDeals هي روابط affiliate. عند شراء لعبة عبر زر "View Deal"، قد يدفع لنا المتجر (Humble، Fanatical، Green Man Gaming) عمولة صغيرة دون أي تكلفة إضافية عليك. لا يؤثر ذلك على الصفقات التي نعرضها — البيانات من CheapShark API مباشرة.</p>],
+         <p>بعض الروابط على GamingDeals هي روابط affiliate. عند شراء لعبة عبر زر "View Deal"، قد يدفع لنا المتجر (Humble، Fanatical، Green Man Gaming) عمولة صغيرة دون أي تكلفة إضافية عليك. لا يؤثر ذلك على الصفقات التي نعرضها — البيانات من CheapShark API مباشرة.</p>],
         ["5. خدمات الطرف الثالث",
          <ul className="list-disc ps-5 space-y-1">
            <li>Stripe — معالجة المدفوعات.</li>
@@ -100,14 +100,14 @@ const PrivacyPage = () => {
         ["6. حقوقك",
          <p>يمكنك طلب نسخة من بياناتك أو تصحيحها أو حذف حسابك في أي وقت بمراسلتنا.</p>],
         ["7. الأطفال",
-         <p>GameDeals غير موجّه للأطفال دون سن 13 ولا نجمع بياناتهم بشكل متعمّد.</p>],
+         <p>GamingDeals غير موجّه للأطفال دون سن 13 ولا نجمع بياناتهم بشكل متعمّد.</p>],
         ["8. التواصل",
          <p className="flex items-center gap-2"><Mail className="w-4 h-4"/> <a className="text-[#D4FF00] underline" href="mailto:Gamingdeals01@gmail.com">Gamingdeals01@gmail.com</a></p>],
       ],
     },
     es: {
       title: "Política de Privacidad",
-      intro: "GameDeals respeta tu privacidad. Este documento explica qué recopilamos, por qué y tus opciones.",
+      intro: "GamingDeals respeta tu privacidad. Este documento explica qué recopilamos, por qué y tus opciones.",
       sections: [
         ["1. Datos que recopilamos",
          <p><strong>Cuenta:</strong> email, nombre, contraseña encriptada (bcrypt). Si usas Google, recibimos email, nombre y foto. <strong>Actividad:</strong> tu lista de deseos, alertas, estado de suscripción Pro. <strong>Pago:</strong> gestionado por Stripe — nunca vemos tu tarjeta. <strong>Técnicos:</strong> IP y navegador (logs ≤ 30 días).</p>],

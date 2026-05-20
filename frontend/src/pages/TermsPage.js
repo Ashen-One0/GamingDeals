@@ -17,10 +17,10 @@ const TermsPage = () => {
   const content = {
     en: {
       title: "Terms of Service",
-      intro: "By using GameDeals you agree to these terms. Please read them carefully.",
+      intro: "By using GamingDeals you agree to these terms. Please read them carefully.",
       sections: [
         ["1. The Service",
-         <p>GameDeals aggregates publicly available game deals from third-party stores via the CheapShark API. We are not a reseller and do not handle game keys or downloads. All purchases happen on the respective store's website.</p>],
+         <p>GamingDeals aggregates publicly available game deals from third-party stores via the CheapShark API. We are not a reseller and do not handle game keys or downloads. All purchases happen on the respective store's website.</p>],
         ["2. Accounts",
          <p>You are responsible for keeping your password confidential. Provide accurate information when registering. We may suspend accounts that abuse the service (e.g. automated scraping, payment fraud).</p>],
         ["3. Pro Subscriptions",
@@ -35,9 +35,9 @@ const TermsPage = () => {
         ["5. Prohibited Use",
          <p>You may not: scrape the site automatically, resell the service, attempt to bypass payment, or use the service for illegal purposes.</p>],
         ["6. Disclaimer",
-         <p>Prices, discounts and availability come from third parties and may be inaccurate or outdated. Always verify on the store's site before purchasing. GameDeals is provided "as is" without warranty.</p>],
+         <p>Prices, discounts and availability come from third parties and may be inaccurate or outdated. Always verify on the store's site before purchasing. GamingDeals is provided "as is" without warranty.</p>],
         ["7. Limitation of Liability",
-         <p>To the maximum extent permitted by law, GameDeals is not liable for any indirect or consequential damages arising from use of the service.</p>],
+         <p>To the maximum extent permitted by law, GamingDeals is not liable for any indirect or consequential damages arising from use of the service.</p>],
         ["8. Changes",
          <p>We may update these terms; significant changes will be notified by email or in-app banner.</p>],
         ["9. Contact",
@@ -46,10 +46,10 @@ const TermsPage = () => {
     },
     ar: {
       title: "شروط الخدمة",
-      intro: "باستخدامك GameDeals فإنك توافق على هذه الشروط. يُرجى قراءتها بعناية.",
+      intro: "باستخدامك GamingDeals فإنك توافق على هذه الشروط. يُرجى قراءتها بعناية.",
       sections: [
         ["1. الخدمة",
-         <p>تجمع GameDeals صفقات الألعاب المتاحة للعموم من متاجر طرف ثالث عبر CheapShark API. لسنا متجراً ولا نتعامل مع مفاتيح الألعاب — كل عملية شراء تتم على موقع المتجر المعني.</p>],
+         <p>تجمع GamingDeals صفقات الألعاب المتاحة للعموم من متاجر طرف ثالث عبر CheapShark API. لسنا متجراً ولا نتعامل مع مفاتيح الألعاب — كل عملية شراء تتم على موقع المتجر المعني.</p>],
         ["2. الحسابات",
          <p>أنت مسؤول عن سرية كلمة المرور. قدّم بيانات دقيقة عند التسجيل. قد نُعلّق الحسابات التي تسيء استخدام الخدمة.</p>],
         ["3. اشتراكات Pro",
@@ -66,7 +66,7 @@ const TermsPage = () => {
         ["6. إخلاء المسؤولية",
          <p>الأسعار والخصومات تأتي من أطراف ثالثة وقد تكون قديمة أو غير دقيقة. تحقّق دائماً على موقع المتجر قبل الشراء.</p>],
         ["7. تحديد المسؤولية",
-         <p>إلى أقصى حد يسمح به القانون، GameDeals غير مسؤولة عن أي أضرار غير مباشرة.</p>],
+         <p>إلى أقصى حد يسمح به القانون، GamingDeals غير مسؤولة عن أي أضرار غير مباشرة.</p>],
         ["8. التغييرات",
          <p>قد نحدّث هذه الشروط — التغييرات الجوهرية يتم إعلامك بها عبر البريد أو إشعار داخل التطبيق.</p>],
         ["9. التواصل",
@@ -75,10 +75,10 @@ const TermsPage = () => {
     },
     es: {
       title: "Términos de Servicio",
-      intro: "Al usar GameDeals aceptas estos términos. Léelos detenidamente.",
+      intro: "Al usar GamingDeals aceptas estos términos. Léelos detenidamente.",
       sections: [
         ["1. El Servicio",
-         <p>GameDeals agrupa ofertas públicas de tiendas externas vía CheapShark API. No somos revendedores; toda compra ocurre en la web del minorista.</p>],
+         <p>GamingDeals agrupa ofertas públicas de tiendas externas vía CheapShark API. No somos revendedores; toda compra ocurre en la web del minorista.</p>],
         ["2. Cuentas",
          <p>Eres responsable de mantener tu contraseña segura. Podemos suspender cuentas que abusen del servicio.</p>],
         ["3. Suscripciones Pro",
@@ -95,7 +95,7 @@ const TermsPage = () => {
         ["6. Descargo",
          <p>Los precios provienen de terceros y pueden ser inexactos. Verifica en la tienda antes de comprar.</p>],
         ["7. Limitación de Responsabilidad",
-         <p>GameDeals no se hace responsable por daños indirectos en la medida permitida por la ley.</p>],
+         <p>GamingDeals no se hace responsable por daños indirectos en la medida permitida por la ley.</p>],
         ["8. Cambios",
          <p>Podemos actualizar estos términos — cambios importantes se notificarán.</p>],
         ["9. Contacto",

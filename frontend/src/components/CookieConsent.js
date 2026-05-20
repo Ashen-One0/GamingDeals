@@ -41,7 +41,7 @@ const CookieConsent = () => {
   const copy = {
     en: {
       title: "We use cookies",
-      body: "GameDeals uses essential cookies to keep you signed in and remember your preferences. We may also use analytics and ad cookies if you accept.",
+      body: "GamingDeals uses essential cookies to keep you signed in and remember your preferences. We may also use analytics and ad cookies if you accept.",
       accept: "Accept all",
       reject: "Essential only",
       learn: "Learn more",

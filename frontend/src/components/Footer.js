@@ -50,7 +50,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="border-t border-zinc-200 dark:border-[#27272A] py-4 px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500">
-        <span>© {new Date().getFullYear()} GameDeals. Deal data provided by CheapShark.</span>
+        <span>© {new Date().getFullYear()} GamingDeals. Deal data provided by CheapShark.</span>
         <div className="flex items-center gap-4">
           <Link to="/privacy" data-testid="footer-privacy" className="hover:text-[#D4FF00]">Privacy</Link>
           <Link to="/terms" data-testid="footer-terms" className="hover:text-[#D4FF00]">Terms</Link>
