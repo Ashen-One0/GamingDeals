@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { Sun, Moon, Heart, Bell, LogOut, User2, Gamepad2 } from "lucide-react";
+import { Sun, Moon, Heart, Bell, LogOut, User2, Gamepad2, Crown } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -81,6 +81,9 @@ const Header = () => {
           <NavLink to="/alerts" className={navClass} data-testid="nav-alerts">
             <span className="flex items-center gap-1"><Bell className="w-4 h-4" />{t("nav.alerts")}</span>
           </NavLink>
+          <NavLink to="/pro" className={navClass} data-testid="nav-pro">
+            <span className="flex items-center gap-1"><Crown className="w-4 h-4 text-[#D4FF00]" />Pro</span>
+          </NavLink>
         </nav>
 
         <div className="flex items-center gap-2">
@@ -100,6 +103,7 @@ const Header = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" data-testid="user-menu" className="rounded-none">
+                  {user.is_pro && <Crown className="w-3.5 h-3.5 me-1 text-[#D4FF00]"/>}
                   {user.picture ? (
                     <img src={user.picture} alt="" className="w-5 h-5 rounded-full me-2" />
                   ) : (
@@ -109,13 +113,16 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuLabel>{user.email}{user.is_pro && <span className="ms-2 text-[10px] bg-[#D4FF00] text-black px-1 font-black">PRO</span>}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem data-testid="menu-wishlist" onClick={() => navigate("/wishlist")}>
                   <Heart className="w-4 h-4 me-2" />{t("nav.wishlist")}
                 </DropdownMenuItem>
                 <DropdownMenuItem data-testid="menu-alerts" onClick={() => navigate("/alerts")}>
                   <Bell className="w-4 h-4 me-2" />{t("nav.alerts")}
+                </DropdownMenuItem>
+                <DropdownMenuItem data-testid="menu-pro" onClick={() => navigate("/pro")}>
+                  <Crown className="w-4 h-4 me-2 text-[#D4FF00]" />{user.is_pro ? "Manage Pro" : "Upgrade to Pro"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem data-testid="menu-logout" onClick={logout}>

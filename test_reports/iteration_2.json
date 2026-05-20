@@ -1,0 +1,59 @@
+{
+  "summary": "Iteration 2 testing for Pro subscription (Stripe) + Affiliate config. Backend: 28/29 passing (17 backward-compat + 11/12 new). Frontend Pro flow fully working: $4.99 monthly + $39.99 yearly cards render, Subscribe redirects unauth users to /login, Header Pro link with Crown visible, ads HIDDEN for is_pro users, ProPage shows 'Already Pro' / 'You're Pro until <date>' banner for paid users, /auth/me reflects is_pro/pro_until. One backend bug found: /api/pro/status/{session_id} crashes 500 on pending Stripe sessions due to emergentintegrations library validation error.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/pro/status/{session_id}",
+        "issue": "Returns 500 when checkout session is still pending/unpaid. Root cause is in third-party emergentintegrations.payments.stripe.checkout.get_checkout_status: it builds CheckoutStatusResponse and the Stripe API returns `metadata` as a StripeObject (not dict), which fails Pydantic validation (`Input should be a valid dictionary`). Stack: server.py line 514 -> emergentintegrations/payments/stripe/checkout.py line 204 -> CheckoutError: 'Unexpected error retrieving session status: 1 validation error for CheckoutStatusResponse metadata: Input should be a valid dictionary [type=dict_type, input_value=<StripeObject ...>]'. Reproduce: POST /api/pro/checkout, then GET /api/pro/status/<returned_session_id>. Frontend ProSuccessPage will hit this on EVERY poll and break the post-checkout flow. Mitigation: catch CheckoutError in server.py get_pro_status and fall back to returning the cached DB row, OR upgrade emergentintegrations package which likely has a fix. Idempotency-path (when txn.payment_status='paid' already) works correctly because the bug branch is short-circuited (line 503).",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/webhook/stripe",
+        "issue": "Catches generic Exception and returns {ok: False} (HTTP 200) for malformed/garbage payloads. OK for liveness but doesn't surface signature errors to Stripe for retries. Acceptable for current scope."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Pro checkout success polling (/pro/success?session_id=...)",
+        "issue": "Because of the backend 500 on /api/pro/status, ProSuccessPage will retry-loop and eventually show 'Could not verify payment.' for every real Stripe session that isn't yet paid. Even after webhook marks paid, the polling endpoint will still 500 unless txn was already updated to payment_status='paid' (webhook required). Direct status-polling fallback is broken.",
+        "affected_selectors": ["[data-testid='pro-success-page']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pro_affiliate.py",
+    "/app/backend/tests/test_game_deals.py",
+    "/app/test_reports/pytest/pytest_pro_affiliate.xml"
+  ],
+  "action_items": [
+    "FIX: In /app/backend/server.py get_pro_status (line ~494), wrap `stripe_checkout.get_checkout_status(session_id)` in try/except CheckoutError; on failure fall back to returning the cached payment_transactions row (with status/payment_status from DB) so the polling endpoint never returns 500. Alternatively bump emergentintegrations to a version that coerces Stripe metadata via `dict(stripe_obj)` before pydantic validation.",
+    "Consider: surface real webhook signature failures (HTTP 400) instead of swallowing all exceptions in /api/webhook/stripe."
+  ],
+  "critical_code_review_comments": [
+    "server.py line 514 raises 500 unguarded — every external SDK call to Stripe must be wrapped in try/except to avoid 500s leaking to clients.",
+    "server.py logger is defined at line 639 (after stripe_webhook function definition). At runtime it's globally available, but defining logger right after imports would be cleaner (and protect against module-load reordering).",
+    "PRO_PACKAGES `days` = 31/366 are a small overcount; the comment '~month/year' is fine but consider using `relativedelta(months=1/years=1)` for accurate billing periods.",
+    "frontend ProPage.js imports `refresh` from useAuth but doesn't use it inside ProPage (used only in ProSuccessPage); minor unused import warning.",
+    "/api/affiliate/config has no auth gate (acceptable since partner IDs are by design public, but documented intent should also clarify the env vars must be public-safe).",
+    "From iteration 1 still open: /api/games/search is shadowed by /api/games/{game_id} catch-all route ordering. Not regressed but still present."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pro_affiliate.py (NEW - 12 pytest cases for Pro + Affiliate flow)"
+  ],
+  "success_rate": {
+    "backend": "97% (28/29: 17/17 legacy + 11/12 new; only /api/pro/status pending-session path fails)",
+    "frontend": "100% on Pro/ads flows tested"
+  },
+  "test_credentials": "Dynamically registered test users: test+pro_<uuid>@gamedeals.app / Test1234! via POST /api/auth/register. To grant Pro: db.users.updateOne({user_id}, {$set:{pro_until:<future-iso>, is_pro:true}}).",
+  "seed_data_creation": "Each test run creates fresh test users + payment_transactions docs. Synthetic 'paid' txn (cs_test_synthetic_<uuid>) created and cleaned up in idempotency test.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pro flow backend tests at /app/backend/tests/test_pro_affiliate.py. Single failing test: TestProStatus::test_status_pending_session — returns 500 from emergentintegrations validation issue. Once main agent wraps the Stripe call in try/except (or library upgrade), re-run that test + manually exercise /pro/success polling. Frontend Pro flow + ad-hiding for is_pro=true users fully validated and working. /api/affiliate/config returns all 6 stores (Steam, GMG, GOG, Humble, Fanatical, Epic) with empty partner strings since no AFF_* env vars set.",
+  "rca of the issue": "RCA — /api/pro/status 500: Stripe SDK returns Session.metadata as a stripe.StripeObject (dict-like but not isinstance(dict)). The emergentintegrations library defines CheckoutStatusResponse(metadata: Dict[str,str]) using strict Pydantic v2 typing which rejects StripeObject. Fix in our code: try/except around stripe_checkout.get_checkout_status; on failure, query DB and return whatever payment_status we have, defaulting to 'unpaid'/'open'. Idempotency for pro_until extension is intact and works (verified via direct DB test): the transition guard `txn.get('payment_status') != 'paid'` correctly short-circuits subsequent calls."
+}

@@ -1,6 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Heart, Bell, ExternalLink, Store } from "lucide-react";
+import { dealUrl } from "../lib/affiliate";
 
 const STORE_MAP = {
   "1": { name: "Steam", abbr: "STM" },
@@ -25,8 +26,6 @@ const STORE_MAP = {
   "34": { name: "Noctre", abbr: "NCT" },
   "35": { name: "DreamGame", abbr: "DG" },
 };
-
-const dealUrl = (dealID) => `https://www.cheapshark.com/redirect?dealID=${dealID}`;
 
 const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
   const { t } = useTranslation();
@@ -85,9 +84,9 @@ const DealCard = ({ deal, inWishlist, onToggleWishlist, onSetAlert }) => {
         <div className="flex items-center gap-2">
           <a
             data-testid="deal-view-btn"
-            href={dealUrl(deal.dealID)}
+            href={buyUrl}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener noreferrer sponsored"
             className="flex-1 inline-flex items-center justify-center gap-1 bg-zinc-900 dark:bg-[#D4FF00] text-[#D4FF00] dark:text-black px-3 py-2 text-xs font-bold tracking-wider uppercase hover:opacity-90 transition"
           >
             {t("deal.view")} <ExternalLink className="w-3 h-3" />

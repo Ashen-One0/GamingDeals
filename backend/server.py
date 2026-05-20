@@ -12,6 +12,10 @@ from datetime import datetime, timezone, timedelta
 import httpx
 import bcrypt
 import jwt
+from emergentintegrations.payments.stripe.checkout import (
+    StripeCheckout,
+    CheckoutSessionRequest,
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -23,6 +27,14 @@ db = client[os.environ['DB_NAME']]
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me-in-production-secret-key')
 JWT_ALG = 'HS256'
+
+# ---------- Pro subscription packages (server-defined, NEVER trust frontend amount) ----------
+PRO_PACKAGES = {
+    "monthly": {"amount": 4.99, "currency": "usd", "label": "GameDeals Pro — Monthly", "days": 31},
+    "yearly":  {"amount": 39.99, "currency": "usd", "label": "GameDeals Pro — Yearly", "days": 366},
+}
+
+STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY", "")
 
 CHEAPSHARK_BASE = "https://www.cheapshark.com/api/1.0"
 CHEAPSHARK_HEADERS = {"User-Agent": "GameDealsApp/1.0 (contact@gamedeals.app)"}
@@ -46,6 +58,8 @@ class UserOut(BaseModel):
     email: str
     name: Optional[str] = None
     picture: Optional[str] = None
+    is_pro: bool = False
+    pro_until: Optional[str] = None
 
 class AuthResponse(BaseModel):
     token: str
@@ -92,6 +106,29 @@ def make_jwt(user_id: str) -> str:
         "iat": datetime.now(timezone.utc),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def user_to_out(user: dict) -> "UserOut":
+    """Build UserOut, computing is_pro from pro_until timestamp."""
+    is_pro = False
+    pro_until_iso = user.get("pro_until")
+    if pro_until_iso:
+        try:
+            dt = datetime.fromisoformat(pro_until_iso)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            if dt > datetime.now(timezone.utc):
+                is_pro = True
+        except Exception:
+            pass
+    return UserOut(
+        user_id=user["user_id"],
+        email=user["email"],
+        name=user.get("name"),
+        picture=user.get("picture"),
+        is_pro=is_pro,
+        pro_until=pro_until_iso,
+    )
 
 
 async def get_current_user(request: Request, authorization: Optional[str] = Header(None)) -> dict:
@@ -159,10 +196,7 @@ async def register(body: RegisterIn):
     }
     await db.users.insert_one(doc)
     token = make_jwt(user_id)
-    return AuthResponse(
-        token=token,
-        user=UserOut(user_id=user_id, email=doc["email"], name=doc["name"]),
-    )
+    return AuthResponse(token=token, user=user_to_out(doc))
 
 
 @api_router.post("/auth/login", response_model=AuthResponse)
@@ -171,15 +205,7 @@ async def login(body: LoginIn):
     if not user or not user.get("password_hash") or not verify_pw(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = make_jwt(user["user_id"])
-    return AuthResponse(
-        token=token,
-        user=UserOut(
-            user_id=user["user_id"],
-            email=user["email"],
-            name=user.get("name"),
-            picture=user.get("picture"),
-        ),
-    )
+    return AuthResponse(token=token, user=user_to_out(user))
 
 
 # ----- Emergent Google Auth -----
@@ -252,12 +278,7 @@ async def session_process(request: Request, response: Response, x_session_id: Op
 
 @api_router.get("/auth/me", response_model=UserOut)
 async def auth_me(user=Depends(get_current_user)):
-    return UserOut(
-        user_id=user["user_id"],
-        email=user["email"],
-        name=user.get("name"),
-        picture=user.get("picture"),
-    )
+    return user_to_out(user)
 
 
 @api_router.post("/auth/logout")
@@ -406,6 +427,201 @@ async def add_alert(body: AlertIn, user=Depends(get_current_user)):
 async def remove_alert(alert_id: str, user=Depends(get_current_user)):
     await db.alerts.delete_one({"alert_id": alert_id, "user_id": user["user_id"]})
     return {"ok": True}
+
+
+# ----- Pro Subscription (Stripe) -----
+
+class CheckoutCreateIn(BaseModel):
+    package_id: str
+    origin_url: str
+
+
+@api_router.get("/pro/packages")
+async def get_pro_packages():
+    return [
+        {"id": k, "amount": v["amount"], "currency": v["currency"], "label": v["label"]}
+        for k, v in PRO_PACKAGES.items()
+    ]
+
+
+@api_router.post("/pro/checkout")
+async def create_pro_checkout(body: CheckoutCreateIn, request: Request, user=Depends(get_current_user)):
+    if body.package_id not in PRO_PACKAGES:
+        raise HTTPException(status_code=400, detail="Invalid package")
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    pkg = PRO_PACKAGES[body.package_id]
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+
+    origin = body.origin_url.rstrip("/")
+    success_url = f"{origin}/pro/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{origin}/pro"
+
+    req = CheckoutSessionRequest(
+        amount=float(pkg["amount"]),
+        currency=pkg["currency"],
+        success_url=success_url,
+        cancel_url=cancel_url,
+        metadata={
+            "user_id": user["user_id"],
+            "email": user["email"],
+            "package_id": body.package_id,
+            "source": "gamedeals_pro",
+        },
+    )
+    session = await stripe_checkout.create_checkout_session(req)
+
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": user["user_id"],
+        "email": user["email"],
+        "package_id": body.package_id,
+        "amount": float(pkg["amount"]),
+        "currency": pkg["currency"],
+        "metadata": {"source": "gamedeals_pro", "package_id": body.package_id},
+        "payment_status": "initiated",
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+
+    return {"url": session.url, "session_id": session.session_id}
+
+
+@api_router.get("/pro/status/{session_id}")
+async def get_pro_status(session_id: str, request: Request):
+    if not STRIPE_API_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured")
+
+    txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not txn:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    # If already finalized, return cached
+    if txn.get("payment_status") == "paid":
+        return {
+            "status": txn.get("status"),
+            "payment_status": txn.get("payment_status"),
+            "amount_total": int(txn.get("amount", 0) * 100),
+            "currency": txn.get("currency"),
+        }
+
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    checkout_status = await stripe_checkout.get_checkout_status(session_id)
+
+    # Update transaction
+    new_status = checkout_status.status
+    new_payment_status = checkout_status.payment_status
+    await db.payment_transactions.update_one(
+        {"session_id": session_id},
+        {"$set": {
+            "status": new_status,
+            "payment_status": new_payment_status,
+            "amount_total": checkout_status.amount_total,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+
+    # If paid AND not yet processed -> mark user as Pro (idempotent)
+    if new_payment_status == "paid" and txn.get("payment_status") != "paid":
+        package_id = txn.get("package_id")
+        pkg = PRO_PACKAGES.get(package_id, PRO_PACKAGES["monthly"])
+        user_doc = await db.users.find_one({"user_id": txn["user_id"]}, {"_id": 0})
+        if user_doc:
+            # Extend from current pro_until or now
+            base = datetime.now(timezone.utc)
+            if user_doc.get("pro_until"):
+                try:
+                    existing = datetime.fromisoformat(user_doc["pro_until"])
+                    if existing.tzinfo is None:
+                        existing = existing.replace(tzinfo=timezone.utc)
+                    if existing > base:
+                        base = existing
+                except Exception:
+                    pass
+            new_until = base + timedelta(days=pkg["days"])
+            await db.users.update_one(
+                {"user_id": txn["user_id"]},
+                {"$set": {"pro_until": new_until.isoformat(), "is_pro": True}},
+            )
+
+    return {
+        "status": checkout_status.status,
+        "payment_status": checkout_status.payment_status,
+        "amount_total": checkout_status.amount_total,
+        "currency": checkout_status.currency,
+    }
+
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    if not STRIPE_API_KEY:
+        return {"ok": False, "error": "Stripe not configured"}
+    body = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+    host_url = str(request.base_url).rstrip("/")
+    webhook_url = f"{host_url}/api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    try:
+        response = await stripe_checkout.handle_webhook(body, sig)
+    except Exception as e:
+        logger.exception("Stripe webhook error: %s", e)
+        return {"ok": False}
+
+    # On successful payment, mark user as Pro (idempotent — re-runs are safe)
+    if response.payment_status == "paid" and response.session_id:
+        txn = await db.payment_transactions.find_one({"session_id": response.session_id}, {"_id": 0})
+        if txn and txn.get("payment_status") != "paid":
+            package_id = (response.metadata or {}).get("package_id") or txn.get("package_id")
+            pkg = PRO_PACKAGES.get(package_id, PRO_PACKAGES["monthly"])
+            user_id = (response.metadata or {}).get("user_id") or txn.get("user_id")
+            user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+            if user_doc:
+                base = datetime.now(timezone.utc)
+                if user_doc.get("pro_until"):
+                    try:
+                        existing = datetime.fromisoformat(user_doc["pro_until"])
+                        if existing.tzinfo is None:
+                            existing = existing.replace(tzinfo=timezone.utc)
+                        if existing > base:
+                            base = existing
+                    except Exception:
+                        pass
+                new_until = base + timedelta(days=pkg["days"])
+                await db.users.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"pro_until": new_until.isoformat(), "is_pro": True}},
+                )
+            await db.payment_transactions.update_one(
+                {"session_id": response.session_id},
+                {"$set": {"payment_status": "paid", "status": "complete",
+                          "updated_at": datetime.now(timezone.utc).isoformat()}},
+            )
+    return {"ok": True}
+
+
+# ----- Affiliate config (read-only, exposes safely to frontend) -----
+
+AFFILIATE_CONFIG = {
+    # Set env vars to enable affiliate tracking per store
+    "1":  {"name": "Steam",        "partner": os.environ.get("AFF_STEAM", "")},
+    "3":  {"name": "GreenManGaming","partner": os.environ.get("AFF_GMG", "")},
+    "7":  {"name": "GOG",          "partner": os.environ.get("AFF_GOG", "")},
+    "11": {"name": "Humble Store", "partner": os.environ.get("AFF_HUMBLE", "")},
+    "15": {"name": "Fanatical",    "partner": os.environ.get("AFF_FANATICAL", "")},
+    "25": {"name": "Epic Games",   "partner": os.environ.get("AFF_EPIC", "")},
+}
+
+
+@api_router.get("/affiliate/config")
+async def get_affiliate_config():
+    """Expose only which stores have affiliate enabled. Partner IDs themselves are exposed
+    because they're embedded in outbound URLs anyway — there is no secret to leak."""
+    return AFFILIATE_CONFIG
 
 
 # Include router

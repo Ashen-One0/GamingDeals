@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Sparkles } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 
 /**
  * AdSlot — flexible ad placeholder.
@@ -21,18 +22,23 @@ const AD_SIZES = {
 
 const AdSlot = ({ size = "banner", adSlot, className = "", testId = "ad-slot" }) => {
   const adRef = useRef(null);
+  const { user } = useAuth() || {};
   const client = process.env.REACT_APP_ADSENSE_CLIENT; // e.g. "ca-pub-1234567890123456"
   const enabled = !!(client && adSlot);
+  const isPro = !!user?.is_pro;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || isPro) return;
     try {
       // eslint-disable-next-line no-unused-expressions
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (e) {
       // noop
     }
-  }, [enabled]);
+  }, [enabled, isPro]);
+
+  // Pro users never see ads
+  if (isPro) return null;
 
   const cfg = AD_SIZES[size] || AD_SIZES.banner;
 
@@ -69,6 +75,9 @@ const AdSlot = ({ size = "banner", adSlot, className = "", testId = "ad-slot" })
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.3em] font-bold">Advertisement</p>
           <p className="text-[10px] uppercase tracking-widest opacity-60 mt-0.5">{cfg.label}</p>
+          <a href="/pro" className="text-[10px] uppercase tracking-widest text-[#D4FF00] hover:underline mt-1 inline-block">
+            Go Pro to hide ads →
+          </a>
         </div>
         <Sparkles className="w-4 h-4 text-[#D4FF00]" />
       </div>

@@ -14,6 +14,7 @@ import DealsPage from "./pages/DealsPage";
 import LoginPage from "./pages/LoginPage";
 import WishlistPage from "./pages/WishlistPage";
 import AlertsPage from "./pages/AlertsPage";
+import ProPage, { ProSuccessPage } from "./pages/ProPage";
 import AuthCallback from "./pages/AuthCallback";
 
 const AppRouter = () => {
@@ -31,6 +32,8 @@ const AppRouter = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/pro" element={<ProPage />} />
+        <Route path="/pro/success" element={<ProSuccessPage />} />
         <Route path="/dashboard" element={<HomePage />} />
       </Routes>
       <Footer />
