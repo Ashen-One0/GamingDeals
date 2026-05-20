@@ -1,15 +1,17 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Header, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import httpx
+import bcrypt
+import jwt
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,54 +21,394 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me-in-production-secret-key')
+JWT_ALG = 'HS256'
 
-# Create a router with the /api prefix
+CHEAPSHARK_BASE = "https://www.cheapshark.com/api/1.0"
+CHEAPSHARK_HEADERS = {"User-Agent": "GameDealsApp/1.0 (contact@gamedeals.app)"}
+
+app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# ---------- Models ----------
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+class RegisterIn(BaseModel):
+    email: EmailStr
+    password: str
+    name: Optional[str] = None
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
 
-# Add your routes to the router instead of directly to app
+class UserOut(BaseModel):
+    user_id: str
+    email: str
+    name: Optional[str] = None
+    picture: Optional[str] = None
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserOut
+
+class WishlistItem(BaseModel):
+    game_id: str
+    title: str
+    thumb: Optional[str] = None
+    cheapest_price: Optional[str] = None
+    added_at: Optional[str] = None
+
+class AlertIn(BaseModel):
+    game_id: str
+    title: str
+    thumb: Optional[str] = None
+    target_price: float
+
+class AlertOut(BaseModel):
+    alert_id: str
+    game_id: str
+    title: str
+    thumb: Optional[str] = None
+    target_price: float
+    created_at: str
+    triggered: bool = False
+    current_price: Optional[float] = None
+
+# ---------- Auth helpers ----------
+
+def hash_pw(pw: str) -> str:
+    return bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+
+def verify_pw(pw: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(pw.encode(), hashed.encode())
+    except Exception:
+        return False
+
+def make_jwt(user_id: str) -> str:
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "iat": datetime.now(timezone.utc),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALG)
+
+
+async def get_current_user(request: Request, authorization: Optional[str] = Header(None)) -> dict:
+    """Resolve user from either JWT (Authorization Bearer) or Emergent session cookie."""
+    # 1) Try cookie session token first (Emergent Google Auth)
+    session_token = request.cookies.get("session_token")
+    if not session_token and authorization and authorization.lower().startswith("bearer "):
+        # Could be JWT or session token via header
+        token = authorization.split(" ", 1)[1].strip()
+        # Try Emergent session first
+        sess = await db.user_sessions.find_one({"session_token": token}, {"_id": 0})
+        if sess:
+            session_token = token
+        else:
+            # Try JWT
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+                user = await db.users.find_one({"user_id": payload["user_id"]}, {"_id": 0, "password_hash": 0})
+                if user:
+                    return user
+            except Exception:
+                pass
+
+    if session_token:
+        sess = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+        if not sess:
+            raise HTTPException(status_code=401, detail="Invalid session")
+        expires_at = sess.get("expires_at")
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at and expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="Session expired")
+        user = await db.users.find_one({"user_id": sess["user_id"]}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return user
+
+    raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+# ---------- Routes ----------
+
 @api_router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"message": "Game Deals API"}
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+# ----- Simple JWT Auth -----
 
-# Include the router in the main app
+@api_router.post("/auth/register", response_model=AuthResponse)
+async def register(body: RegisterIn):
+    existing = await db.users.find_one({"email": body.email.lower()}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user_id = f"user_{uuid.uuid4().hex[:12]}"
+    doc = {
+        "user_id": user_id,
+        "email": body.email.lower(),
+        "name": body.name or body.email.split("@")[0],
+        "password_hash": hash_pw(body.password),
+        "auth_provider": "local",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(doc)
+    token = make_jwt(user_id)
+    return AuthResponse(
+        token=token,
+        user=UserOut(user_id=user_id, email=doc["email"], name=doc["name"]),
+    )
+
+
+@api_router.post("/auth/login", response_model=AuthResponse)
+async def login(body: LoginIn):
+    user = await db.users.find_one({"email": body.email.lower()}, {"_id": 0})
+    if not user or not user.get("password_hash") or not verify_pw(body.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = make_jwt(user["user_id"])
+    return AuthResponse(
+        token=token,
+        user=UserOut(
+            user_id=user["user_id"],
+            email=user["email"],
+            name=user.get("name"),
+            picture=user.get("picture"),
+        ),
+    )
+
+
+# ----- Emergent Google Auth -----
+
+@api_router.post("/auth/session-process")
+async def session_process(request: Request, response: Response, x_session_id: Optional[str] = Header(None)):
+    """Exchange session_id for session_token with Emergent backend, set httpOnly cookie."""
+    if not x_session_id:
+        raise HTTPException(status_code=400, detail="Missing X-Session-ID header")
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.get(
+                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                headers={"X-Session-ID": x_session_id},
+            )
+        if r.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid session_id")
+        data = r.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Auth provider error: {e}")
+
+    email = data.get("email", "").lower()
+    name = data.get("name")
+    picture = data.get("picture")
+    session_token = data.get("session_token")
+    if not email or not session_token:
+        raise HTTPException(status_code=502, detail="Incomplete auth data")
+
+    # Find or create user
+    existing = await db.users.find_one({"email": email}, {"_id": 0})
+    if existing:
+        user_id = existing["user_id"]
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$set": {"name": name or existing.get("name"), "picture": picture or existing.get("picture")}},
+        )
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        await db.users.insert_one({
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "auth_provider": "google",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+    expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    await db.user_sessions.insert_one({
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        max_age=7 * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+    )
+    return {
+        "user": {"user_id": user_id, "email": email, "name": name, "picture": picture}
+    }
+
+
+@api_router.get("/auth/me", response_model=UserOut)
+async def auth_me(user=Depends(get_current_user)):
+    return UserOut(
+        user_id=user["user_id"],
+        email=user["email"],
+        name=user.get("name"),
+        picture=user.get("picture"),
+    )
+
+
+@api_router.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        await db.user_sessions.delete_one({"session_token": session_token})
+    response.delete_cookie("session_token", path="/", samesite="none", secure=True)
+    return {"ok": True}
+
+
+# ----- Deals (CheapShark proxy) -----
+
+@api_router.get("/stores")
+async def get_stores():
+    async with httpx.AsyncClient(timeout=15, headers=CHEAPSHARK_HEADERS) as c:
+        r = await c.get(f"{CHEAPSHARK_BASE}/stores")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch stores")
+    return r.json()
+
+
+@api_router.get("/deals")
+async def get_deals(
+    storeID: Optional[str] = Query(None, description="Comma-separated store IDs"),
+    pageSize: int = 24,
+    pageNumber: int = 0,
+    sortBy: str = "Deal Rating",
+    desc: int = 0,
+    lowerPrice: Optional[float] = None,
+    upperPrice: Optional[float] = None,
+    metacritic: Optional[int] = None,
+    steamRating: Optional[int] = None,
+    title: Optional[str] = None,
+    onSale: int = 1,
+):
+    params = {
+        "pageSize": pageSize,
+        "pageNumber": pageNumber,
+        "sortBy": sortBy,
+        "desc": desc,
+        "onSale": onSale,
+    }
+    if storeID: params["storeID"] = storeID
+    if lowerPrice is not None: params["lowerPrice"] = lowerPrice
+    if upperPrice is not None: params["upperPrice"] = upperPrice
+    if metacritic is not None: params["metacritic"] = metacritic
+    if steamRating is not None: params["steamRating"] = steamRating
+    if title: params["title"] = title
+
+    async with httpx.AsyncClient(timeout=20, headers=CHEAPSHARK_HEADERS) as c:
+        r = await c.get(f"{CHEAPSHARK_BASE}/deals", params=params)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch deals")
+    return r.json()
+
+
+@api_router.get("/games/{game_id}")
+async def get_game(game_id: str):
+    async with httpx.AsyncClient(timeout=15, headers=CHEAPSHARK_HEADERS) as c:
+        r = await c.get(f"{CHEAPSHARK_BASE}/games", params={"id": game_id})
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch game")
+    return r.json()
+
+
+@api_router.get("/games/search")
+async def search_games(title: str, limit: int = 20):
+    async with httpx.AsyncClient(timeout=15, headers=CHEAPSHARK_HEADERS) as c:
+        r = await c.get(f"{CHEAPSHARK_BASE}/games", params={"title": title, "limit": limit})
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to search games")
+    return r.json()
+
+
+# ----- Wishlist -----
+
+@api_router.get("/wishlist")
+async def get_wishlist(user=Depends(get_current_user)):
+    items = await db.wishlist.find({"user_id": user["user_id"]}, {"_id": 0, "user_id": 0}).to_list(500)
+    return items
+
+
+@api_router.post("/wishlist")
+async def add_wishlist(item: WishlistItem, user=Depends(get_current_user)):
+    doc = item.model_dump()
+    doc["user_id"] = user["user_id"]
+    doc["added_at"] = datetime.now(timezone.utc).isoformat()
+    await db.wishlist.update_one(
+        {"user_id": user["user_id"], "game_id": item.game_id},
+        {"$set": doc},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api_router.delete("/wishlist/{game_id}")
+async def remove_wishlist(game_id: str, user=Depends(get_current_user)):
+    await db.wishlist.delete_one({"user_id": user["user_id"], "game_id": game_id})
+    return {"ok": True}
+
+
+# ----- Price Alerts -----
+
+@api_router.get("/alerts")
+async def get_alerts(user=Depends(get_current_user)):
+    alerts = await db.alerts.find({"user_id": user["user_id"]}, {"_id": 0, "user_id": 0}).to_list(500)
+    # Check current prices for each
+    async with httpx.AsyncClient(timeout=15, headers=CHEAPSHARK_HEADERS) as c:
+        for a in alerts:
+            try:
+                r = await c.get(f"{CHEAPSHARK_BASE}/games", params={"id": a["game_id"]})
+                if r.status_code == 200:
+                    data = r.json()
+                    cheapest = data.get("cheapestPriceEver", {}).get("price")
+                    deals = data.get("deals", [])
+                    current = None
+                    if deals:
+                        current = min(float(d["price"]) for d in deals)
+                    a["current_price"] = current
+                    a["triggered"] = bool(current is not None and current <= a["target_price"])
+            except Exception:
+                a["triggered"] = False
+    return alerts
+
+
+@api_router.post("/alerts", response_model=AlertOut)
+async def add_alert(body: AlertIn, user=Depends(get_current_user)):
+    alert_id = f"alert_{uuid.uuid4().hex[:10]}"
+    doc = {
+        "alert_id": alert_id,
+        "user_id": user["user_id"],
+        "game_id": body.game_id,
+        "title": body.title,
+        "thumb": body.thumb,
+        "target_price": body.target_price,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "triggered": False,
+    }
+    await db.alerts.insert_one(doc)
+    doc.pop("user_id", None)
+    return AlertOut(**doc)
+
+
+@api_router.delete("/alerts/{alert_id}")
+async def remove_alert(alert_id: str, user=Depends(get_current_user)):
+    await db.alerts.delete_one({"alert_id": alert_id, "user_id": user["user_id"]})
+    return {"ok": True}
+
+
+# Include router
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,12 +419,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

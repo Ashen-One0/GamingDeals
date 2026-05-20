@@ -1,34 +1,29 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+    font-family: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.font-heading {
+    font-family: "Unbounded", "Outfit", system-ui, sans-serif;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+html[lang="ar"] body,
+html[lang="ar"] .App {
+    font-family: "Cairo", "Outfit", system-ui, sans-serif;
 }
 
-.App-link {
-    color: #61dafb;
+html[lang="ar"] .font-heading {
+    font-family: "Cairo", "Unbounded", system-ui, sans-serif;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Line clamp utility */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #27272A; }
+::-webkit-scrollbar-track { background: transparent; }
