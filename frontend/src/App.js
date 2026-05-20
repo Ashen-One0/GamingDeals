@@ -15,7 +15,10 @@ import LoginPage from "./pages/LoginPage";
 import WishlistPage from "./pages/WishlistPage";
 import AlertsPage from "./pages/AlertsPage";
 import ProPage, { ProSuccessPage } from "./pages/ProPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 import AuthCallback from "./pages/AuthCallback";
+import CookieConsent from "./components/CookieConsent";
 
 const AppRouter = () => {
   const location = useLocation();
@@ -34,9 +37,12 @@ const AppRouter = () => {
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/pro" element={<ProPage />} />
         <Route path="/pro/success" element={<ProSuccessPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/dashboard" element={<HomePage />} />
       </Routes>
       <Footer />
+      <CookieConsent />
     </>
   );
 };
