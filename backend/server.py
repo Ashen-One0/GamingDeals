@@ -388,23 +388,25 @@ async def remove_wishlist(game_id: str, user=Depends(get_current_user)):
 
 @api_router.get("/alerts")
 async def get_alerts(user=Depends(get_current_user)):
+    import asyncio
     alerts = await db.alerts.find({"user_id": user["user_id"]}, {"_id": 0, "user_id": 0}).to_list(500)
-    # Check current prices for each
+    if not alerts:
+        return alerts
+
+    async def fetch_price(client: httpx.AsyncClient, alert: dict):
+        try:
+            r = await client.get(f"{CHEAPSHARK_BASE}/games", params={"id": alert["game_id"]})
+            if r.status_code == 200:
+                deals = r.json().get("deals", [])
+                current = min((float(d["price"]) for d in deals), default=None)
+                alert["current_price"] = current
+                alert["triggered"] = bool(current is not None and current <= alert["target_price"])
+        except Exception:
+            alert["triggered"] = False
+
+    # Concurrent fetches — replaces sequential N+1 loop
     async with httpx.AsyncClient(timeout=15, headers=CHEAPSHARK_HEADERS) as c:
-        for a in alerts:
-            try:
-                r = await c.get(f"{CHEAPSHARK_BASE}/games", params={"id": a["game_id"]})
-                if r.status_code == 200:
-                    data = r.json()
-                    cheapest = data.get("cheapestPriceEver", {}).get("price")
-                    deals = data.get("deals", [])
-                    current = None
-                    if deals:
-                        current = min(float(d["price"]) for d in deals)
-                    a["current_price"] = current
-                    a["triggered"] = bool(current is not None and current <= a["target_price"])
-            except Exception:
-                a["triggered"] = False
+        await asyncio.gather(*(fetch_price(c, a) for a in alerts), return_exceptions=True)
     return alerts
 
 
